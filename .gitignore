@@ -1,0 +1,21 @@
+# VSCode
+.vscode/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Node / tooling (si llegas a usar)
+node_modules/
+dist/
+
+# Rojo
+*.rbxmx
+*.rbxmx.lock
+*.rbxm
+*.rbxl
+*.rbxlx
+
+# Build/Export temporales
+build/
+out/

@@ -1,0 +1,1 @@
+﻿local C = {}\nreturn C

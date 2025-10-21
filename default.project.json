@@ -1,0 +1,45 @@
+{
+  "name": "RobloxParty",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Game": {
+        "$path": "ReplicatedStorage/Game"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "GameServer": {
+        "$path": "ServerScriptService/GameServer"
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "Maps": {
+        "$path": "ServerStorage/Maps"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "ClientApp": {
+          "$path": "StarterPlayer/StarterPlayerScripts/ClientApp.client.lua"
+        },
+        "UIController": {
+          "$path": "StarterPlayer/StarterPlayerScripts/UIController.lua"
+        },
+        "NetClient": {
+          "$path": "StarterPlayer/StarterPlayerScripts/NetClient.lua"
+        },
+        "Effects": {
+          "$path": "StarterPlayer/StarterPlayerScripts/Effects.lua"
+        }
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui"
+    }
+  }
+}
