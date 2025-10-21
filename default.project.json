@@ -1,45 +1,78 @@
 {
-  "name": "RobloxParty",
+  "name": "Roblox Party",
   "tree": {
     "$className": "DataModel",
+
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "Game": {
-        "$path": "ReplicatedStorage/Game"
-      }
-    },
-    "ServerScriptService": {
-      "$className": "ServerScriptService",
-      "GameServer": {
-        "$path": "ServerScriptService/GameServer"
-      }
-    },
-    "ServerStorage": {
-      "$className": "ServerStorage",
-      "Maps": {
-        "$path": "ServerStorage/Maps"
-      }
-    },
-    "StarterPlayer": {
-      "$className": "StarterPlayer",
-      "StarterPlayerScripts": {
-        "$className": "StarterPlayerScripts",
-        "ClientApp": {
-          "$path": "StarterPlayer/StarterPlayerScripts/ClientApp.client.lua"
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+
+        "Net": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true,
+
+          "RemoteEvents": {
+            "$className": "Folder",
+            "$ignoreUnknownInstances": true
+          },
+          "RemoteFunctions": {
+            "$className": "Folder",
+            "$ignoreUnknownInstances": true
+          }
         },
-        "UIController": {
-          "$path": "StarterPlayer/StarterPlayerScripts/UIController.lua"
+
+        "Shared": {
+          "$path": "src/ReplicatedStorage/Game/Shared",
+          "$ignoreUnknownInstances": true
         },
-        "NetClient": {
-          "$path": "StarterPlayer/StarterPlayerScripts/NetClient.lua"
+        "UI": {
+          "$path": "src/ReplicatedStorage/Game/UI",
+          "$ignoreUnknownInstances": true
         },
-        "Effects": {
-          "$path": "StarterPlayer/StarterPlayerScripts/Effects.lua"
+        "Minigames": {
+          "$path": "src/ReplicatedStorage/Game/Minigames",
+          "$ignoreUnknownInstances": true
+        },
+        "Config": {
+          "$path": "src/ReplicatedStorage/Game/Config",
+          "$ignoreUnknownInstances": true
         }
       }
     },
-    "StarterGui": {
-      "$className": "StarterGui"
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "GameServer": {
+        "$path": "src/ServerScriptService/GameServer",
+        "$ignoreUnknownInstances": true
+      }
+    },
+
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "Maps": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+
+        "LobbyMap": {
+          "$className": "Model",
+          "$ignoreUnknownInstances": true
+        },
+        "MinigameMaps": {
+          "$className": "Folder",
+          "$ignoreUnknownInstances": true
+        }
+      }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$path": "src/StarterPlayerScripts",
+        "$ignoreUnknownInstances": true
+      }
     }
   }
 }

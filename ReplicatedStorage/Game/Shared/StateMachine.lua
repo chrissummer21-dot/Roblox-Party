@@ -1,1 +1,0 @@
-﻿-- FSM reusable (stub)\nlocal FSM = {}\nreturn FSM

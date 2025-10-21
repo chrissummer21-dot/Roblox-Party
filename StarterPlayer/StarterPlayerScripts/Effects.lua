@@ -1,1 +1,0 @@
-﻿-- Efectos SFX/VFX comunes (stub)\nlocal M = {}\nreturn M

@@ -1,0 +1,1 @@
+-- Helpers comunes\nlocal Util = {}\nreturn Util

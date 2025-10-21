@@ -1,1 +1,0 @@
-﻿local S = {}\nreturn S

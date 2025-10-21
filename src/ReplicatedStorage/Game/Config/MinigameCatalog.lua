@@ -1,0 +1,1 @@
+-- Registro de minijuegos (se llena mÃ¡s tarde)\nreturn {}
