@@ -1,7 +1,7 @@
--- ReplicatedStorage/Game/Minigames/__catalog__.lua
--- Declara los módulos disponibles. 'path' debe existir como hijo de esta carpeta.
+local RS = game:GetService("ReplicatedStorage")
+local Minigames = RS.Game.Minigames
+
 return {
-    -- Ejemplos (crea los ModuleScript con esos nombres o ajusta aquí):
-    -- { id = "ButtonMash",  path = script.Parent:WaitForChild("ButtonMash"),  enabled = true },
-    -- { id = "ObstacleRun", path = script.Parent:WaitForChild("ObstacleRun"), enabled = true },
+	-- ...otros
+	{ id = "AudioRun", module = Minigames.AudioRun.GameController, weight = 1 },
 }
