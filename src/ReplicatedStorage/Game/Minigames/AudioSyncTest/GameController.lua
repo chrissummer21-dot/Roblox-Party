@@ -217,14 +217,7 @@ function AudioSync:Setup(context)
 	-- Espera previa para cargar mapa/recursos
 	task.wait(PRE_LAUNCH_WAIT)
 
-	-- Coloca/limita movimiento (opcional)
-	for _, plr in ipairs(self.players) do
-		local char = plr.Character or plr.CharacterAdded:Wait()
-		local hrp  = char:WaitForChild("HumanoidRootPart")
-		hrp.CFrame = CFrame.new(0, BASE_Y, 0)
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		if hum then hum.WalkSpeed = 0 hum.JumpPower = 0 end
-	end
+	
 
 	-- Carga beatmap
 	local data = readActiveBeatmap()
