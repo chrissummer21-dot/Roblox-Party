@@ -54,11 +54,21 @@ function M.Setup(context)
 	end
 
 	-- Teleport suave a StartPad
-	for _, p in ipairs(plist) do
-		local char = p.Character or p.CharacterAdded:Wait()
-		local hrp = char:WaitForChild("HumanoidRootPart")
-		hrp.CFrame = CFrame.new(startPad.Position + Vector3.new(0, 3, 0))
+	-- Teleport a StartPad (espera Character si aún no está)
+local startPad = clone:FindFirstChild("StartPad", true)
+if startPad and context.players then
+	for _, p in ipairs(context.players) do
+		task.spawn(function()
+			local char = p.Character or p.CharacterAdded:Wait()
+			local hrp  = char:WaitForChild("HumanoidRootPart")
+			-- pequeña espera por seguridad después de spawn
+			task.wait(0.15)
+			hrp.CFrame = CFrame.new(startPad.Position + Vector3.new(0, 3, 0))
+		end)
 	end
+else
+	warn("[AudioRun] No StartPad o no hay players en context")
+end
 
 	-- Estado del minijuego
 	local state = {
