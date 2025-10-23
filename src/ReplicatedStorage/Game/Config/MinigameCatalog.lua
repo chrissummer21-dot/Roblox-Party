@@ -30,13 +30,22 @@ end
 -- ======= Registro de minijuegos (agrega aquí los que tengas) =======
 do
 	-- AudioRun
-	local f = MinigamesFolder:FindFirstChild("AudioRun")
-	if f and f:FindFirstChild("GameController") then add(f.GameController)
-	else warn("[MinigameCatalog] No se encontró AudioRun/GameController") end
+-- FIX: Usar WaitForChild para prevenir "race conditions" en el arranque
+	local f = MinigamesFolder:WaitForChild("AudioRun", 10) -- Espera 10 seg
+	if f then
+		local controller = f:WaitForChild("GameController", 10)
+		if controller then
+			add(controller)
+		else
+			warn("[MinigameCatalog] Timeout esperando AudioRun/GameController")
+		end
+	else
+		warn("[MinigameCatalog] Timeout esperando la carpeta AudioRun")
+	end
 
 	-- Ejemplos (descomenta cuando existan)
-	-- local ex = MinigamesFolder:FindFirstChild("ExampleMinigame"); if ex and ex:FindFirstChild("GameController") then add(ex.GameController) end
-	-- local sync = MinigamesFolder:FindFirstChild("AudioSyncTest"); if sync and sync:FindFirstChild("GameController") then add(sync.GameController) end
+	-- local ex = MinigamesFolder:WaitForChild("ExampleMinigame", 10); if ex and ex:WaitForChild("GameController", 10) then add(ex.GameController) end
+	-- local sync = MinigamesFolder:WaitForChild("AudioSyncTest", 10); if sync and sync:WaitForChild("GameController", 10) then add(sync.GameController) end
 end
 -- ===================================================================
 
