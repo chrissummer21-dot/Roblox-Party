@@ -18,7 +18,7 @@ local M = {
     -- Lobby (cola de inicio)
     LOBBY = {
         REQUIRED_PLAYERS = 8,   -- jugadores que deben tocar la StartZone
-        START_TIMEOUT    = 30,  -- segundos desde el primer jugador en cola
+        START_TIMEOUT    = 5,  -- segundos desde el primer jugador en cola
     },
 }
 

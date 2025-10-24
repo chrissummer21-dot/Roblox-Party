@@ -1,9 +1,15 @@
 -- ReplicatedStorage/Game/Minigames/AudioRun/GameController.lua
 local Players = game:GetService("Players")
-local ContentProvider = game:GetService("ContentProvider")
+local RS      = game:GetService("ReplicatedStorage")
+local UIEvent = RS:WaitForChild("Game"):WaitForChild("Net"):WaitForChild("RemoteEvents"):WaitForChild("UIEvent")
 
 local M = {}
 M.__index = M
+
+-- ================== CONFIGURACIÓN DE ÓRBITA ==================
+local ORBIT_RADIUS = 20     -- Distancia (en studs) desde el centro
+local ORBIT_Z_DISTANCE = 25 -- Qué tan "delante" del centro orbita
+-- =============================================================
 
 -- ====== META ======
 function M.GetMeta()
@@ -12,40 +18,24 @@ function M.GetMeta()
 		name = "Audio Run",
 		enabled = true,
 		weight = 10,
-		minPlayers = 1,           -- 👉 permite solo
+		minPlayers = 1,
 		maxPlayers = 8,
-		heatSizes = {1,4,8},      -- 👉 incluye 1
+		heatSizes = {1,4,8},
 		recommendedPlayers = 1,
 	}
 end
 
 -- ====== SETUP ======
 function M.Setup(context)
-	-- context: { sessionId, players, mountFolder }
 	assert(context and context.mountFolder, "AudioRun.Setup: falta context.mountFolder")
 
-	-- Traer mapa base
-	local mapSrc = game.ServerStorage.Maps.MinigameMaps:FindFirstChild("AudioRunMap")
-	assert(mapSrc, "AudioRunMap no existe en ServerStorage/Maps/MinigameMaps")
+	-- 1. Buscar el "FloatPoint"
+	local floatPoint = workspace:WaitForChild("FloatPoint", 10) 
+	assert(floatPoint and floatPoint:IsA("BasePart"), "AudioRun: No se encontró 'FloatPoint' en el workspace.")
 
-	-- Clonar en la carpeta de la sesión
-	local map = mapSrc:Clone()
-	map.Name = "AudioRunMap_runtime"
-	map.Parent = context.mountFolder
+	local centerPos = floatPoint.Position
 
-	-- Hallar marcadores
-	local markers = map:FindFirstChild("Markers")
-	assert(markers, "AudioRun: falta folder Markers")
-	local startPadMarkers = markers:FindFirstChild("StartPad") -- Renombrado para claridad
-	local goal = markers:FindFirstChild("Goal")
-	assert(startPadMarkers and goal, "AudioRun: faltan StartPad o Goal")
-
-	-- Audio
-	local sound = map:FindFirstChild("Song", true)
-	assert(sound and sound:IsA("Sound") and sound.SoundId ~= "", "AudioRun: Sound (Song) inválido")
-	ContentProvider:PreloadAsync({sound})
-
-	-- Lista de jugadores (fallback si el servicio no la pasa)
+	-- 2. Obtener lista de jugadores
 	local plist = {}
 	if context.players and #context.players > 0 then
 		for _, p in ipairs(context.players) do table.insert(plist, p) end
@@ -53,103 +43,110 @@ function M.Setup(context)
 		for _, p in ipairs(Players:GetPlayers()) do table.insert(plist, p) end
 	end
 
-	-- Teleport a StartPad (espera Character si aún no está)
---
--- 👇👇👇 LÍNEA CORREGIDA AQUÍ 👇👇👇
---
-local startPad = map:FindFirstChild("StartPad", true) -- (Cambiado 'clone' por 'map')
---
--- 👆👆👆 LÍNEA CORREGIDA AQUÍ 👆👆👆
---
-if startPad and context.players then
-	for _, p in ipairs(context.players) do
+	-- 3. Teletransportar jugadores y enviar evento al cliente
+	for i, plr in ipairs(plist) do
 		task.spawn(function()
-			local char = p.Character or p.CharacterAdded:Wait()
-			local hrp  = char:WaitForChild("HumanoidRootPart")
-			-- pequeña espera por seguridad después de spawn
-			task.wait(0.15)
-			hrp.CFrame = CFrame.new(startPad.Position + Vector3.new(0, 3, 0))
+			local char = plr.Character or plr.CharacterAdded:Wait()
+            if char:FindFirstChild("HumanoidRootPart") then
+			    local startAngle = (i / #plist) * (math.pi * 2)
+                local startPos = centerPos + Vector3.new(
+                    ORBIT_RADIUS * math.cos(startAngle), 
+                    ORBIT_RADIUS * math.sin(startAngle),
+                    ORBIT_Z_DISTANCE
+                )
+			    char:PivotTo(CFrame.new(startPos))
+            end
+			
+            -- 4. Enviar orden al cliente
+			UIEvent:FireClient(plr, {
+				type = "MinigameUI",
+				minigame = "AudioRun",
+				payload = {
+                    command     = "StartFloat",
+                    centerPoint = centerPos,
+                    radius      = ORBIT_RADIUS,
+                    orbitZ      = centerPos.Z + ORBIT_Z_DISTANCE,
+					sessionId   = context.sessionId,
+					songId      = "rbxassetid://18434858608",
+					offset      = 0.6
+				}
+			})
 		end)
 	end
-else
-	warn("[AudioRun] No StartPad o no hay players en context")
-end
 
-	-- Estado del minijuego
+	-- 5. Devolver 'state' mínimo
 	local state = {
-		map = map,
-		startPad = startPad,
-		goal = goal,
-		sound = sound,
-		startTime = 0,
-		finishTimes = {},  -- userId -> seconds
-		finished = {},     -- userId -> true
-		results = nil,
+		map = floatPoint,
+		startPad = floatPoint,
 		players = plist,
+        connections = {},
+        hiddenInstances = {} -- <-- Guardaremos todo lo que ocultemos aquí
 	}
+    
+    --
+    -- V V V LÓGICA DE OCULTAR MEJORADA V V V
+    --
+    -- 6. Ocultar partes del workspace
+    local instancesToHide = {
+        workspace:FindFirstChild("Baseplate"),
+        workspace:FindFirstChild("StartZone")
+    }
 
-	-- Conexion de meta
-	state.goalConn = goal.Touched:Connect(function(hit)
-		local char = hit and hit:FindFirstAncestorOfClass("Model")
-		if not char then return end
-		local hum = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
-		local plr = Players:GetPlayerFromCharacter(char); if not plr then return end
+    for _, inst in ipairs(instancesToHide) do
+        if inst then
+            local originalProperties = {}
+            
+            -- Recolectar el objeto principal y todos sus descendientes
+            local itemsToFade = { inst }
+            for _, descendant in ipairs(inst:GetDescendants()) do
+                table.insert(itemsToFade, descendant)
+            end
 
-		if not state.finished[plr.UserId] and state.startTime > 0 then
-			state.finished[plr.UserId] = true
-			local t = os.clock() - state.startTime
-			state.finishTimes[plr.UserId] = t
-			print(("[AudioRun] %s terminó en %.2fs"):format(plr.Name, t))
-		end
-	end)
+            -- Iterar sobre todo (Baseplate, StartZone Y sus hijos/texturas)
+            for _, item in ipairs(itemsToFade) do
+                if item:IsA("BasePart") then
+                    -- Guardar estado original
+                    originalProperties[item] = {
+                        Transparency = item.Transparency,
+                        CanCollide = item.CanCollide
+                    }
+                    -- Ocultar
+                    item.Transparency = 1
+                    item.CanCollide = false
+                
+                elseif item:IsA("Decal") or item:IsA("Texture") then
+                    -- ¡Aquí está la clave! Ocultar también texturas y calcomanías
+                    originalProperties[item] = {
+                        Transparency = item.Transparency
+                    }
+                    -- Ocultar
+                    item.Transparency = 1
+                end
+            end
+            
+            -- Guardar todos los cambios hechos
+            table.insert(state.hiddenInstances, {
+                instance = inst,
+                properties = originalProperties
+            })
+        end
+    end
+    --
+    -- A A A FIN DE LA LÓGICA MEJORADA A A A
+    --
 
 	return state
 end
 
 -- ====== START ======
 function M.Start(state)
-	print("[AudioRun] Start")
-	-- Cuenta regresiva simple (servidor)
-	for i = 3,1,-1 do
-		print("[AudioRun] "..i)
-		task.wait(1)
-	end
-
-	-- Reproducir música y arrancar cronómetro
-	state.sound:Play()
-	state.startTime = os.clock()
-
-	-- Duración máxima de la prueba (fallback) — 90s
-	local TIMEOUT = 90
-	local t0 = os.clock()
-	while os.clock() - t0 < TIMEOUT do
-		-- si todos terminaron, salimos antes
-		local allDone = true
-		for _, p in ipairs(state.players) do
-			if not state.finished[p.UserId] then allDone = false break end
-		end
-		if allDone then break end
-		task.wait(0.2)
-	end
-
-	-- Armar resultados (orden por menor tiempo; quien no llegó, al final)
-	local scored = {}
-	for _, p in ipairs(state.players) do
-		local ft = state.finishTimes[p.UserId]
-		table.insert(scored, {player = p, time = ft or math.huge})
-	end
-	table.sort(scored, function(a,b) return a.time < b.time end)
-
+	print("[AudioRun] Start (Modo Flotar Orbital)")
+    task.wait(30) -- Duración del minijuego
+	
 	local placement = {}
-	for rank, row in ipairs(scored) do
-		table.insert(placement, {
-			userId = row.player.UserId,
-			name = row.player.Name,
-			time = (row.time ~= math.huge) and row.time or nil,
-			rank = rank
-		})
+	for rank, p in ipairs(state.players) do
+		table.insert(placement, { userId = p.UserId, name = p.Name, rank = rank })
 	end
-
 	state.results = { placement = placement }
 	print("[AudioRun] Start OK. Resultados listos.")
 	return true
@@ -162,12 +159,42 @@ end
 
 -- ====== TEARDOWN ======
 function M.Teardown(state)
-	if state.goalConn then
-		pcall(function() state.goalConn:Disconnect() end)
+    -- 6. Decir a los clientes que dejen de flotar
+	for _, plr in ipairs(state.players) do
+        pcall(function()
+		    UIEvent:FireClient(plr, {
+			    type = "MinigameUI",
+			    minigame = "AudioRun",
+			    payload = { command = "StopFloat" }
+		    })
+        end)
 	end
-	if state.map and state.map.Parent then
-		state.map:Destroy()
-	end
+    
+    --
+    -- V V V LÓGICA DE RESTAURAR MEJORADA V V V
+    --
+    -- 7. Restaurar partes ocultas (incluyendo texturas)
+    if state.hiddenInstances then
+        for _, data in ipairs(state.hiddenInstances) do
+            local inst = data.instance
+            
+            -- Restaurar todas las propiedades guardadas
+            for item, props in pairs(data.properties) do
+                -- Verificar si el objeto aún existe antes de cambiarlo
+                if item and pcall(function() return item.Parent end) then 
+                    if props.Transparency ~= nil then
+                        item.Transparency = props.Transparency
+                    end
+                    if props.CanCollide ~= nil then
+                        item.CanCollide = props.CanCollide
+                    end
+                end
+            end
+        end
+    end
+    --
+    -- A A A FIN DE LA LÓGICA MEJORADA A A A
+    --
 end
 
 return M
